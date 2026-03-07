@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taiwan Payroll PWA PRO 2026</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0038a8">
+<style>
+:root { --primary:#0038a8; --danger:#ce1126; --success:#28a745; --bg-light:#f0f2f5; --text-light:#333; }
+body{font-family:'Segoe UI',Tahoma,sans-serif;margin:0;padding:10px;background:var(--bg-light);color:var(--text-light);}
+.container{max-width:600px;margin:auto;background:white;border-radius:15px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden;}
+.header{background:var(--primary);color:white;padding:15px;text-align:center;}
+.card{padding:15px;border-bottom:1px solid #eee;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+label{font-size:13px;font-weight:bold;display:block;margin-top:8px;}
+input[type=number],input[type=date],select{width:100%;padding:12px;font-size:16px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;}
+.btn-add{background:var(--primary);color:white;border:none;padding:12px;width:100%;border-radius:8px;font-size:16px;cursor:pointer;margin-top:10px;}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}
+th,td{border:1px solid #eee;padding:6px;text-align:center;}
+th{background:#eee;}
+.summary-box{background:#2d3436;color:white;padding:15px;border-radius:10px;margin:10px 0;}
+.sum-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:15px;}
+.net-total{font-size:22px;color:#55efc4;font-weight:bold;border-top:1px solid #555;padding-top:8px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header"><h2>🇹🇼 Taiwan Payroll PWA PRO 2026
+<br>คำนวนค่าแรง เงินเดือน</h2></div>
+
+  <div class="card" style="background:#f0fff4;border-left:5px solid var(--success);">
+    <strong>💰 รายรับ (Earnings)</strong>
+    <div class="grid">
+      <div><label>เงินเดือนพื้นฐาน</label><input type="number" id="salary" value="29500" oninput="updateUI()"></div>
+      <div><label>ค่าตำแหน่ง</label><input type="number" id="position" value="0" oninput="updateUI()"></div>
+      <div><label>ค่าขยัน</label><input type="number" id="diligent" value="500" oninput="updateUI()"></div>
+      <div><label>ค่าอื่นๆ</label><input type="number" id="other" value="0" oninput="updateUI()"></div>
+      <div><label>ภาษี (%)</label><input type="number" id="tax" value="6" oninput="updateUI()"></div>
+    </div>
+  </div>
+
+  <div class="card" style="background:#fff5f5;border-left:5px solid var(--danger);">
+    <strong>🔻 รายการหัก (Deductions)</strong>
+    <div class="grid">
+      <div><label>ลางาน</label><input type="number" id="leaveWork" value="0" oninput="updateUI()"></div>
+      <div><label>ลากิจ</label><input type="number" id="leavePersonal" value="0" oninput="updateUI()"></div>
+      <div><label>ลาป่วย</label><input type="number" id="leaveSick" value="0" oninput="updateUI()"></div>
+      <div><label>ค่าล่าม</label><input type="number" id="broker" value="1800" oninput="updateUI()"></div>
+      <div><label>ค่าที่พัก</label><input type="number" id="dorm" value="2500" oninput="updateUI()"></div>
+      <div><label>ประกันสุขภาพ</label><input type="number" id="healthIns" value="458" oninput="updateUI()"></div>
+      <div><label>ประกันสังคม</label><input type="number" id="socialIns" value="679" oninput="updateUI()"></div>
+      <div><label>ค่าตรวจโรค/เดือน</label><input type="number" id="medicalCheck" value="0" oninput="updateUI()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong>⏱️ บันทึกชั่วโมง OT</strong>
+    <div class="grid" style="grid-template-columns:1.2fr 1fr 1fr;">
+      <input type="date" id="workDate">
+      <input type="number" id="otHours" placeholder="ชม. OT">
+      <select id="otType">
+        <option value="weekday">วันธรรมดา</option>
+        <option value="weekend">วันหยุดสัปดาห์</option>
+        <option value="holiday">วันหยุดนักขัตฤกษ์</option>
+      </select>
+    </div>
+    <button class="btn-add" onclick="addRecord()">➕ เพิ่มรายการ OT</button>
+    <button class="btn-add" style="background:#ce1126;margin-top:5px;" onclick="clearOT()">🗑️ ล้าง OT ทั้งหมด</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>วันที่</th><th>ชม. OT</th><th>ประเภทวัน</th><th>เป็นเงิน</th></tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="summary-box">
+    <div class="sum-row"><span>รวมรายได้:</span> <span id="income">0</span></div>
+    <div class="sum-row"><span>รวมเงิน OT:</span> <span id="otTotal">0</span></div>
+    <div class="sum-row" style="color:#ff7675;"><span>ภาษี:</span> <span id="taxValue">0</span></div>
+    <div class="sum-row" style="color:#ff7675;"><span>วันลา/ลากิจ/ลาป่วย:</span> <span id="leaveValue">0</span></div>
+    <div class="sum-row"><span>ค่าล่าม/ที่พัก/ประกัน/ตรวจโรค:</span> <span id="fixedDeduct">0</span></div>
+    <div class="net-total"><span>ยอดรับสุทธิ:</span> <span id="net">0</span> NTD</div>
+  </div>
+</div>
+
+<script>
+let logs = JSON.parse(localStorage.getItem('tw_pwa_logs'))||[];
+
+function calculateOT(hours, hourlyRate, type){
+  let otMoney=0;
+  for(let i=1;i<=Math.floor(hours);i++){
+    if(type==="weekday") otMoney += (i<=2?hourlyRate*1.3334:hourlyRate*1.6667);
+    else if(type==="weekend") otMoney += hourlyRate*2;
+    else if(type==="holiday") otMoney += hourlyRate*2.6667;
+  }
+  const decimalPart = hours-Math.floor(hours);
+  if(decimalPart>0){
+    const lastHour=Math.floor(hours)+1;
+    if(type==="weekday") otMoney += decimalPart*(lastHour<=2?hourlyRate*1.3334:hourlyRate*1.6667);
+    else if(type==="weekend") otMoney += decimalPart*hourlyRate*2;
+    else if(type==="holiday") otMoney += decimalPart*hourlyRate*2.6667;
+  }
+  return otMoney;
+}
+
+function addRecord(){
+  const date=document.getElementById('workDate').value;
+  const hours=parseFloat(document.getElementById('otHours').value)||0;
+  const type=document.getElementById('otType').value;
+  const base=parseFloat(document.getElementById('salary').value)||0;
+  if(!date||hours<=0)return alert("กรุณาระบุข้อมูล OT");
+  const hourlyRate=base/30/8;
+  const otMoney=calculateOT(hours,hourlyRate,type);
+  logs.push({date,hours,type,otMoney});
+  localStorage.setItem('tw_pwa_logs',JSON.stringify(logs));
+  document.getElementById('otHours').value="";
+  updateUI();
+}
+
+function clearOT(){
+  if(confirm("คุณแน่ใจว่าจะล้าง OT ทั้งหมดหรือไม่?")){
+    logs=[];
+    localStorage.setItem('tw_pwa_logs',JSON.stringify(logs));
+    updateUI();
+  }
+}
+
+function updateUI(){
+  const tbody=document.getElementById('tableBody');tbody.innerHTML="";
+  let totalOT=0;
+  logs.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(item=>{
+    totalOT+=item.otMoney;
+    tbody.innerHTML+=`<tr><td>${item.date}</td><td>${item.hours}</td><td>${item.type}</td><td>${Math.round(item.otMoney)}</td></tr>`;
+  });
+  const salary=parseFloat(document.getElementById("salary").value)||0;
+  const pos=parseFloat(document.getElementById("position").value)||0;
+  const dil=parseFloat(document.getElementById("diligent").value)||0;
+  const other=parseFloat(document.getElementById("other").value)||0;
+  const income=salary+pos+dil+other;
+  const taxP=parseFloat(document.getElementById("tax").value)||0;
+  const taxValue=(income+totalOT)*(taxP/100);
+  const broker=parseFloat(document.getElementById("broker").value)||0;
+  const dorm=parseFloat(document.getElementById("dorm").value)||0;
+  const daily=salary/30;
+  const leaveWork=parseFloat(document.getElementById("leaveWork").value)||0;
+  const leavePersonal=parseFloat(document.getElementById("leavePersonal").value)||0;
+  const leaveSick=parseFloat(document.getElementById("leaveSick").value)||0;
+  const leaveValue=(leaveWork*daily)+(leavePersonal*daily)+(leaveSick*daily*0.5);
+  const healthIns=parseFloat(document.getElementById("healthIns").value)||0;
+  const socialIns=parseFloat(document.getElementById("socialIns").value)||0;
+  const medicalCheck=parseFloat(document.getElementById("medicalCheck").value)||0;
+  const totalDeduct=broker+dorm+leaveValue+healthIns+socialIns+medicalCheck;
+  const net=(income+totalOT)-taxValue-totalDeduct;
+  document.getElementById("income").innerText=Math.round(income);
+  document.getElementById("otTotal").innerText=Math.round(totalOT);
+  document.getElementById("taxValue").innerText="-"+Math.round(taxValue);
+  document.getElementById("leaveValue").innerText="-"+Math.round(leaveValue);
+  document.getElementById("fixedDeduct").innerText="-"+Math.round(broker+dorm+healthIns+socialIns+medicalCheck);
+  document.getElementById("net").innerText=Math.round(net);
+}
+
+document.getElementById('workDate').valueAsDate=new Date();
+updateUI();
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(()=>console.log('Service Worker Registered'));}
+</script>
+</body>
+</html>
