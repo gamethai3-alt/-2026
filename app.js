@@ -113,5 +113,16 @@ function draw() {
     ctx2.fillStyle = "#00ffc3";
     ctx2.shadowBlur = 15;
     ctx2.fillRect(i * barWidth, canvas.height - h, barWidth, h);
+    const subBass = ctx.createOscillator();
+const subGain = ctx.createGain();
+
+subBass.type = "sine";
+subBass.frequency.value = 50; // sub bass
+
+subGain.gain.value = 0.3;
+
+subBass.connect(subGain).connect(bassEQ);
+subBass.start();
+    
   }
 }
